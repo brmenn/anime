@@ -3,17 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stream Anime</title>
+  <title>StreamKu - Nonton Anime Sub Indo</title>
+  <meta name="description" content="Nonton anime subtitle Indonesia online gratis. Streaming & download anime ongoing dan completed.">
   <link rel="stylesheet" href="css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
-  <nav class="navbar">
+  <a class="skip-link" href="#mainContent">Langsung ke konten</a>
+
+  <nav class="navbar" aria-label="Navigasi utama">
     <div class="nav-inner">
-      <a class="nav-brand" href="#home">StreamKu</a>
-      <div class="nav-links">
+      <a class="nav-brand" href="#home" aria-label="Beranda">StreamKu</a>
+      <div class="nav-links" role="navigation" aria-label="Menu">
         <a href="#home">Beranda</a>
         <a href="#ongoing">Ongoing</a>
         <a href="#completed">Completed</a>
@@ -21,23 +24,25 @@
         <a href="#schedule">Jadwal</a>
         <a href="#unlimited">Daftar Anime</a>
       </div>
-      <div class="nav-search">
-        <input type="text" id="searchInput" placeholder="Cari anime..." autocomplete="off">
-        <button id="searchBtn">Cari</button>
+      <div class="nav-search" role="search">
+        <input type="search" id="searchInput" placeholder="Cari anime..." autocomplete="off" aria-label="Cari anime">
+        <button id="searchBtn" aria-label="Cari">Cari</button>
       </div>
-      <button class="nav-toggle" id="navToggle"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <button class="nav-toggle" id="navToggle" aria-label="Buka menu" aria-expanded="false">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
     </div>
   </nav>
 
   <main id="mainContent">
-    <div class="loader" id="loader">
+    <div class="loader" id="loader" role="status" aria-label="Memuat">
       <div class="spinner"></div>
       <p>Memuat data...</p>
     </div>
     <div id="pageContent"></div>
   </main>
 
-  <footer class="footer">
+  <footer class="footer" role="contentinfo">
     <p>&copy; 2026 StreamKu. Powered by Sanka Vollerei API.</p>
   </footer>
 

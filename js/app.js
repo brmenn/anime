@@ -44,7 +44,9 @@ function handleRoute() {
 let content;
 
 function showLoader() {
-  document.getElementById('loader').style.display = 'flex';
+  const loader = document.getElementById('loader');
+  loader.style.display = 'flex';
+  loader.innerHTML = `<div class="spinner"></div><p>Memuat data...</p>`;
   content = document.getElementById('pageContent');
   content.innerHTML = '';
 }
@@ -84,7 +86,7 @@ function animeCard(item) {
         <div class="card-title">${title}</div>
         <div class="card-meta">
           ${episodes ? `<span>${episodes} eps</span>` : ''}
-          ${score ? `<span>★ ${score}</span>` : ''}
+          ${score ? `<span>${icon('star')} ${score}</span>` : ''}
           ${status ? `<span>${status}</span>` : ''}
           ${date ? `<span>${date}</span>` : ''}
         </div>
@@ -144,7 +146,7 @@ async function renderOngoing(page) {
     hideLoader();
     const list = json.data?.animeList || [];
     const pag = json.pagination || {};
-    let html = `<div class="page-title">${icon('flame')}  Anime Ongoing</div>`;
+    let html = `<div class="page-title">${icon('flame')} Anime Ongoing</div>`;
     if (list.length) {
       html += `<div class="anime-grid">${list.map(animeCard).join('')}</div>`;
     } else {
@@ -163,7 +165,7 @@ async function renderCompleted(page) {
     hideLoader();
     const list = json.data?.animeList || [];
     const pag = json.pagination || {};
-    let html = `<div class="page-title">${icon('check')}  Anime Completed</div>`;
+    let html = `<div class="page-title">${icon('check')} Anime Completed</div>`;
     if (list.length) {
       html += `<div class="anime-grid">${list.map(animeCard).join('')}</div>`;
     } else {
@@ -246,7 +248,7 @@ async function renderDetail(animeId) {
       <div class="detail-poster"><img src="${poster}" alt="${title}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22><rect fill=%22%23222%22 width=%22300%22 height=%22400%22/><text fill=%22%23555%22 font-size=%2214%22 x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22>No Image</text></svg>'"></div>
       <div class="detail-info">
         <h1>${title}</h1>
-        ${jpn ? `<div class="japanese-title">${jpn}</div>` : ''}
+        ${jpn ? `<div class="jpn-title">${jpn}</div>` : ''}
         <div class="detail-meta">
           ${score ? `<span>${icon('star')} <strong>${score}</strong></span>` : ''}
           ${type ? `<span>Tipe: <strong>${type}</strong></span>` : ''}
@@ -314,7 +316,7 @@ async function renderEpisode(episodeId) {
     const downloadData = d.downloadUrl || {};
 
     let html = `<div class="episode-header">
-      ${animeId ? `<a href="#anime/${animeId}" style="color:#888;font-size:0.85rem;">${icon('arrow-left')} Kembali ke Detail</a>` : ''}
+      ${animeId ? `<a href="#anime/${animeId}" class="back-link">${icon('arrow-left')} Kembali ke Detail</a>` : ''}
       <h1>${title}</h1>
       ${releaseTime ? `<div class="sub">${releaseTime}</div>` : ''}
     </div>`;
@@ -580,6 +582,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('navToggle').addEventListener('click', () => {
-    document.querySelector('.nav-links').classList.toggle('open');
+    const links = document.querySelector('.nav-links');
+    const isOpen = links.classList.toggle('open');
+    document.getElementById('navToggle').setAttribute('aria-expanded', isOpen);
   });
 });
