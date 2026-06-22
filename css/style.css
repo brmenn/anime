@@ -13,6 +13,23 @@ body {
   flex-direction: column;
 }
 
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+.section-title svg,
+.page-title svg,
+.server-tab svg,
+.episode-nav a svg,
+.detail-info svg,
+.detail-meta svg {
+  display: inline;
+  vertical-align: middle;
+  margin-right: 2px;
+}
+
 a {
   color: #00bcd4;
   text-decoration: none;

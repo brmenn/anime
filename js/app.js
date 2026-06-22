@@ -119,14 +119,14 @@ async function renderHome() {
 
     if (ongoingList.length) {
       html += `<div class="home-section">
-        <div class="section-title">🔥 Ongoing <span class="badge">Terbaru</span></div>
+        <div class="section-title">${icon('flame')} Ongoing <span class="badge">Terbaru</span></div>
         <div class="anime-grid">${ongoingList.map(animeCard).join('')}</div>
       </div>`;
     }
 
     if (completedList.length) {
       html += `<div class="home-section">
-        <div class="section-title">✅ Completed</div>
+        <div class="section-title">${icon('check')} Completed</div>
         <div class="anime-grid">${completedList.map(animeCard).join('')}</div>
       </div>`;
     }
@@ -144,7 +144,7 @@ async function renderOngoing(page) {
     hideLoader();
     const list = json.data?.animeList || [];
     const pag = json.pagination || {};
-    let html = `<div class="page-title">🔥 Anime Ongoing</div>`;
+    let html = `<div class="page-title">${icon('flame')}  Anime Ongoing</div>`;
     if (list.length) {
       html += `<div class="anime-grid">${list.map(animeCard).join('')}</div>`;
     } else {
@@ -163,7 +163,7 @@ async function renderCompleted(page) {
     hideLoader();
     const list = json.data?.animeList || [];
     const pag = json.pagination || {};
-    let html = `<div class="page-title">✅ Anime Completed</div>`;
+    let html = `<div class="page-title">${icon('check')}  Anime Completed</div>`;
     if (list.length) {
       html += `<div class="anime-grid">${list.map(animeCard).join('')}</div>`;
     } else {
@@ -181,7 +181,7 @@ async function renderGenreList() {
     const json = await getGenres();
     hideLoader();
     const list = json.data?.genreList || [];
-    let html = `<div class="page-title">🎭 Genre Anime</div>`;
+    let html = `<div class="page-title">${icon('theater')} Genre Anime</div>`;
     if (list.length) {
       html += `<div class="genre-grid">`;
       list.forEach(g => {
@@ -205,7 +205,7 @@ async function renderGenrePage(genreId, page) {
     const list = d?.animeList || [];
     const genreName = d?.genre || genreId;
     const pag = json.pagination || {};
-    let html = `<div class="page-title">🎭 Genre: ${genreName}</div>`;
+    let html = `<div class="page-title">${icon('theater')} Genre: ${genreName}</div>`;
     if (list.length) {
       html += `<div class="anime-grid">${list.map(animeCard).join('')}</div>`;
     } else {
@@ -248,7 +248,7 @@ async function renderDetail(animeId) {
         <h1>${title}</h1>
         ${jpn ? `<div class="japanese-title">${jpn}</div>` : ''}
         <div class="detail-meta">
-          ${score ? `<span>⭐ <strong>${score}</strong></span>` : ''}
+          ${score ? `<span>${icon('star')} <strong>${score}</strong></span>` : ''}
           ${type ? `<span>Tipe: <strong>${type}</strong></span>` : ''}
           ${status ? `<span>Status: <strong>${status}</strong></span>` : ''}
           ${episodes ? `<span>Episode: <strong>${episodes}</strong></span>` : ''}
@@ -266,12 +266,12 @@ async function renderDetail(animeId) {
 
     if (batch) {
       html += `<div style="margin-bottom:20px;">
-        <a href="#batch/${batch.batchId}" class="server-tab active">📦 Download Batch</a>
+        <a href="#batch/${batch.batchId}" class="server-tab active">${icon('package')} Download Batch</a>
       </div>`;
     }
 
     if (eps.length) {
-      html += `<div class="episode-list"><div class="section-title">📺 Daftar Episode</div>`;
+      html += `<div class="episode-list"><div class="section-title">${icon('tv')} Daftar Episode</div>`;
       eps.slice().reverse().forEach(ep => {
         const eid = ep.episodeId || '';
         const en = ep.eps || ep.episodeNumber || '';
@@ -287,7 +287,7 @@ async function renderDetail(animeId) {
     }
 
     if (recommendations.length) {
-      html += `<div class="home-section"><div class="section-title">💡 Rekomendasi</div>
+      html += `<div class="home-section"><div class="section-title">${icon('lightbulb')} Rekomendasi</div>
         <div class="recommendation-grid">${recommendations.map(smallCard).join('')}</div></div>`;
     }
 
@@ -314,7 +314,7 @@ async function renderEpisode(episodeId) {
     const downloadData = d.downloadUrl || {};
 
     let html = `<div class="episode-header">
-      ${animeId ? `<a href="#anime/${animeId}" style="color:#888;font-size:0.85rem;">⬅ Kembali ke Detail</a>` : ''}
+      ${animeId ? `<a href="#anime/${animeId}" style="color:#888;font-size:0.85rem;">${icon('arrow-left')} Kembali ke Detail</a>` : ''}
       <h1>${title}</h1>
       ${releaseTime ? `<div class="sub">${releaseTime}</div>` : ''}
     </div>`;
@@ -342,13 +342,13 @@ async function renderEpisode(episodeId) {
 
     if (defaultStreamingUrl) {
       html += `<div style="margin-bottom:16px;">
-        <a href="${defaultStreamingUrl}" target="_blank" class="server-tab active">🔗 Buka Link Streaming</a>
+        <a href="${defaultStreamingUrl}" target="_blank" class="server-tab active">${icon('external-link')} Buka Link Streaming</a>
       </div>`;
     }
 
     const dlQualities = downloadData.qualities || [];
     if (dlQualities.length) {
-      html += `<div class="download-section"><h3>📥 Download</h3>`;
+      html += `<div class="download-section"><h3>${icon('download')} Download</h3>`;
       dlQualities.forEach(q => {
         const qTitle = q.title || '';
         const size = q.size || '';
@@ -367,10 +367,10 @@ async function renderEpisode(episodeId) {
     if (hasPrev || hasNext) {
       html += `<div class="episode-nav">`;
       if (hasPrev && prevEp) {
-        html += `<a href="#episode/${prevEp.episodeId}">⬅ ${prevEp.title || 'Sebelumnya'}</a>`;
+        html += `<a href="#episode/${prevEp.episodeId}">${icon('arrow-left')} ${prevEp.title || 'Sebelumnya'}</a>`;
       }
       if (hasNext && nextEp) {
-        html += `<a href="#episode/${nextEp.episodeId}">${nextEp.title || 'Berikutnya'} ➡</a>`;
+        html += `<a href="#episode/${nextEp.episodeId}">${nextEp.title || 'Berikutnya'} ${icon('arrow-right')}</a>`;
       }
       html += `</div>`;
     }
@@ -419,7 +419,7 @@ async function renderBatch(batchId) {
     const downloadData = d.downloadUrl || {};
     const formats = downloadData.formats || [];
 
-    let html = `<div class="page-title">📦 Batch Download</div>`;
+    let html = `<div class="page-title">${icon('package')} Batch Download</div>`;
 
     if (poster) {
       html += `<div style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
@@ -427,7 +427,7 @@ async function renderBatch(batchId) {
         <div>
           <h2 style="color:#fff;">${title}</h2>
           ${jpn ? `<p style="color:#888;">${jpn}</p>` : ''}
-          ${type ? `<p style="color:#aaa;">${type} ${score ? `| ★ ${score}` : ''}</p>` : ''}
+          ${type ? `<p style="color:#aaa;">${type} ${score ? `| ${icon('star')} ${score}` : ''}</p>` : ''}
         </div>
       </div>`;
     }
@@ -456,7 +456,7 @@ async function renderBatch(batchId) {
     }
 
     if (animeId) {
-      html += `<div style="margin-top:20px;"><a href="#anime/${animeId}" class="server-tab active">⬅ Kembali ke Detail</a></div>`;
+      html += `<div style="margin-top:20px;"><a href="#anime/${animeId}" class="server-tab active">${icon('arrow-left')} Kembali ke Detail</a></div>`;
     }
     content.innerHTML = html;
   } catch (e) {
@@ -469,7 +469,7 @@ async function renderSchedule() {
     const json = await getSchedule();
     hideLoader();
     const data = json.data || [];
-    let html = `<div class="page-title">📅 Jadwal Anime</div>
+    let html = `<div class="page-title">${icon('calendar')} Jadwal Anime</div>
       <div class="schedule-tabs" id="scheduleTabs">`;
 
     const dayMap = {};
@@ -515,7 +515,7 @@ async function renderSearch(query, page) {
     const json = await getSearch(query);
     hideLoader();
     const list = json.data?.animeList || [];
-    let html = `<div class="page-title">🔍 Hasil Pencarian: "${query}"</div>`;
+    let html = `<div class="page-title">${icon('search')} Hasil Pencarian: "${query}"</div>`;
     if (list.length) {
       html += `<div class="search-status">Menampilkan ${list.length} hasil</div>`;
       html += `<div class="anime-grid">${list.map(animeCard).join('')}</div>`;
@@ -535,7 +535,7 @@ async function renderUnlimited(start) {
     const list = json.data?.list || [];
     const letters = '#ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
-    let html = `<div class="page-title">📚 Daftar Semua Anime</div>`;
+    let html = `<div class="page-title">${icon('book')} Daftar Semua Anime</div>`;
     html += `<div class="alphabet-nav">`;
     letters.forEach(l => {
       const active = (l === start) || (!start && l === '#');
