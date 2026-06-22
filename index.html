@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stream Anime</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a class="nav-brand" href="#home">StreamKu</a>
+      <div class="nav-links">
+        <a href="#home">Beranda</a>
+        <a href="#ongoing">Ongoing</a>
+        <a href="#completed">Completed</a>
+        <a href="#genre">Genre</a>
+        <a href="#schedule">Jadwal</a>
+        <a href="#unlimited">Daftar Anime</a>
+      </div>
+      <div class="nav-search">
+        <input type="text" id="searchInput" placeholder="Cari anime..." autocomplete="off">
+        <button id="searchBtn">Cari</button>
+      </div>
+      <button class="nav-toggle" id="navToggle">☰</button>
+    </div>
+  </nav>
+
+  <main id="mainContent">
+    <div class="loader" id="loader">
+      <div class="spinner"></div>
+      <p>Memuat data...</p>
+    </div>
+    <div id="pageContent"></div>
+  </main>
+
+  <footer class="footer">
+    <p>&copy; 2026 StreamKu. Powered by Sanka Vollerei API.</p>
+  </footer>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
