@@ -1,5 +1,15 @@
 import { default as Axios } from "axios";
 import { load } from "cheerio";
+
+function decodeEntities(value) {
+    return value
+        .replace(/&amp;/g, "&")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">");
+}
+
 export const get = async (url) => {
     const urlObj = new URL(url);
     const host = urlObj.hostname;
@@ -30,14 +40,18 @@ export const get = async (url) => {
         const response = await Axios.get(url, header);
         const $ = load(response.data);
 
-        // Use a single regex pattern to capture the file URL
-        const regex = /'file'\s*:\s*'([^']*)'|"file"\s*:\s*"(.*?)"/;
-        const match = $.html().match(regex);
+        const html = $.html();
+        const patterns = [
+            /videoURL\s*=\s*["']([^"']+)["']/,
+            /<source[^>]+src=["']([^"']+)["']/i,
+            /'file'\s*:\s*'([^']*)'/,
+            /"file"\s*:\s*"([^"]*)"/,
+            /["'](https?:\/\/[^"']+\.mp4)["']/,
+        ];
 
-        if (match && (match[1] || match[2])) {
-            const fileUrl = match[1] || match[2];
-    
-            return fileUrl;
+        for (const pattern of patterns) {
+            const match = html.match(pattern);
+            if (match && match[1]) return decodeEntities(match[1]);
         }
 
         return "-";

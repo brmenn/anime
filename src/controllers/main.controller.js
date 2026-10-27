@@ -3,12 +3,19 @@ import { baseUrl as _baseUrl, completeAnime as _completeAnime, onGoingAnime as _
 import { default as Axios } from "axios";
 import { requestFailed } from "../utils/errors.js";
 import { ImageList } from "../utils/image_genre.js";
-import e from "express";
 import { headers } from "../utils/headers.js";
 
 const baseUrl = _baseUrl;
 const completeAnime = _completeAnime;
 const onGoingAnime = _onGoingAnime;
+
+function getMaxPage($) {
+  const pages = $(".pagenavix .page-numbers")
+    .map((i, el) => parseInt($(el).text().trim(), 10))
+    .get()
+    .filter((n) => !Number.isNaN(n));
+  return pages.length ? Math.max(...pages) : null;
+}
 
 export function home(req, res) {
   let home = {};
@@ -22,7 +29,6 @@ export function home(req, res) {
       const element = $(".venz");
       let episode, uploaded_on, day_updated, thumb, title, link, id;
       element
-        .children()
         .eq(0)
         .find("ul > li")
         .each(function () {
@@ -55,7 +61,6 @@ export function home(req, res) {
       const element = $(".venz");
       let episode, uploaded_on, score, thumb, title, link, id;
       element
-        .children()
         .eq(1)
         .find("ul > li")
         .each(function () {
@@ -96,7 +101,6 @@ export function completeAnimeList(req, res) {
   const page =
     typeof params === "undefined" ? "" : params === "1" ? "" : `page/${params}`;
   const fullUrl = `${baseUrl}${completeAnime}${page}`;
-  console.log(fullUrl);
   Axios.get(fullUrl, {
     headers
   })
@@ -106,7 +110,6 @@ export function completeAnimeList(req, res) {
       let animeList = [];
       let episode, uploaded_on, score, thumb, title, link, id;
       element
-        .children()
         .eq(0)
         .find("ul > li")
         .each(function () {
@@ -132,9 +135,7 @@ export function completeAnimeList(req, res) {
           });
         });
 
-      const next = $(".pagenavix > a.next").text();
-      
-      const maxPage = next == "Berikutnya »" ? parseInt($('.page-numbers:nth-last-child(2)').text()) : parseInt($('.page-numbers:nth-last-child(1)').text())
+      const maxPage = getMaxPage($);
 
       res.status(200).json({
         status: "success",
@@ -160,7 +161,6 @@ export function onGoingAnimeList(req, res) {
       let animeList = [];
       let episode, uploaded_on, day_updated, thumb, title, link, id;
       element
-        .children()
         .eq(0)
         .find("ul > li")
         .each(function () {
@@ -186,9 +186,7 @@ export function onGoingAnimeList(req, res) {
           });
         });
 
-      const next = $(".pagenavix > a.next").text();
-    
-      const maxPage = next == "Berikutnya »" ? parseInt($('.page-numbers:nth-last-child(2)').text()) : parseInt($('.page-numbers:nth-last-child(1)').text())
+      const maxPage = getMaxPage($);
 
       res.status(200).json({
         status: "success",
@@ -202,7 +200,7 @@ export function onGoingAnimeList(req, res) {
     });
 }
 export function schedules(req, res) {
-  Axios.get(baseUrl + schedule).then((response) => {
+  Axios.get(baseUrl + schedule, { headers }).then((response) => {
     const $ = load(response.data);
     const element = $(".kgjdwl321");
     let animeList = [];
@@ -227,7 +225,7 @@ export function schedules(req, res) {
 }
 export function genre(req, res) {
   const fullUrl = baseUrl + _genreList;
-  Axios.get(fullUrl)
+  Axios.get(fullUrl, { headers })
     .then((response) => {
       const $ = load(response.data);
       const element = $(".genres");
@@ -235,8 +233,8 @@ export function genre(req, res) {
       element.find("li > a").each(function (i, el) {
         let object = {};
         object.genre_name = $(el).text();
-        object.id = $(el).attr("href").replace("/genres/", "");
-        object.link = baseUrl + $(el).attr("href");
+        object.id = $(el).attr("href").replace("/genres/", "").replace(/\/+$/, "");
+        object.link = baseUrl + $(el).attr("href").replace(/^\//, "");
         object.image_link = ImageList[i];
         genreList.push(object);
       });
@@ -250,8 +248,7 @@ export function animeByGenre(req, res) {
   const pageNumber = req.params.pageNumber;
   const id = req.params.id;
   const fullUrl = baseUrl + `genres/${id}/page/${pageNumber}`;
-  console.log(fullUrl);
-  Axios.get(fullUrl)
+  Axios.get(fullUrl, { headers })
     .then((response) => {
       const $ = load(response.data);
       const element = $(".page");
@@ -270,9 +267,11 @@ export function animeByGenre(req, res) {
           .match(/\/anime\/([^\/]+)/)[1];
         object.studio = $(this).find(".col-anime-studio").text();
         object.episode = $(this).find(".col-anime-eps").text();
-        object.score = parseFloat($(this).find(".col-anime-rating").text());
-        object.release_date = $(this).find(".col-anime-date").text();
+        const scoreText = $(this).find(".col-anime-rating").text().trim();
+        object.score = scoreText === "" ? null : parseFloat(scoreText);
+        object.release_date = $(this).find(".col-anime-date").text().trim();
         genreList = [];
+        object.genre_list = genreList;
         $(this)
           .find(".col-anime-genre > a")
           .each(function () {
@@ -287,6 +286,7 @@ export function animeByGenre(req, res) {
       res.send({
         status: "success",
         baseUrl: fullUrl,
+        maxPage: getMaxPage($),
         animeList,
       });
     })
@@ -315,7 +315,10 @@ export function search(req, res) {
             const genre_result = {
               genre_title: $(this).text(),
               genre_link: $(this).attr("href"),
-              genre_id: $(this).attr("href").replace(`${baseUrl}genres/`, ""),
+              genre_id: $(this)
+                .attr("href")
+                .replace(`${baseUrl}genres/`, "")
+                .replace(/\/+$/, ""),
             };
             genre_list.push(genre_result);
           });

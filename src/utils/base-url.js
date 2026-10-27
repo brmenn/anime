@@ -1,4 +1,4 @@
-export const baseUrl = 'https://otakudesu.cloud/';
+export const baseUrl = 'https://otakudesu.blog/';
 export const completeAnime = 'complete-anime/';
 export const onGoingAnime = 'ongoing-anime/';
 export const schedule = 'jadwal-rilis/';

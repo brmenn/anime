@@ -2,9 +2,8 @@ import { baseUrl as _baseUrl } from "../utils/base-url.js";
 import { default as Axios } from "axios";
 import { load } from "cheerio";
 import { requestFailed } from "../utils/errors.js";
-import { get, getStreamUrl } from "../utils/episodeHelper.js";
+import { get } from "../utils/episodeHelper.js";
 import { baseUrl } from "../utils/base-url.js";
-import e from "express";
 import { headers } from "../utils/headers.js";
 
 export async function detailAnime(req, res) {
@@ -17,8 +16,11 @@ export async function detailAnime(req, res) {
     });
 
     const $ = load(response.data);
+    if ($(".venser").length === 0) {
+      res.status(404).json({ status: false, message: `anime "${id}" not found` });
+      return;
+    }
     const detailElement = $(".venser").find(".fotoanime");
-    const epsElement = $("#_epslist").html();
     let object = {};
     let episode_list = [];
     object.thumb = detailElement.find("img").attr("src");
@@ -64,9 +66,14 @@ export async function detailAnime(req, res) {
         .eq(5)
         .text()
         .replace("Status: ", "");
-      object.total_episode = parseInt(
-        $(this).find("p").children().eq(6).text().replace("Total Episode: ", "")
-      );
+      const totalEpisodeText = $(this)
+        .find("p")
+        .children()
+        .eq(6)
+        .text()
+        .replace("Total Episode: ", "")
+        .trim();
+      object.total_episode = parseInt(totalEpisodeText);
       object.duration = $(this)
         .find("p")
         .children()
@@ -100,19 +107,16 @@ export async function detailAnime(req, res) {
         });
     });
 
-    $("#venkonten > div.venser > div:nth-child(8) > ul > li").each(
-      (i, element) => {
-        const dataList = {
-          title: $(element).find("span > a").text(),
-          id: $(element)
-            .find("span > a")
-            .attr("href").match(/\/episode\/(.*?)\//)[1],
-          link: $(element).find("span > a").attr("href"),
-          uploaded_on: $(element).find(".zeebr").text(),
-        };
-        episode_list.push(dataList);
-      }
-    );
+    $("div.venser > div.episodelist > ul > li").each((i, element) => {
+      const link = $(element).find("span > a").attr("href");
+      if (!link || !/\/episode\//.test(link)) return;
+      episode_list.push({
+        title: $(element).find("span > a").text(),
+        id: link.match(/\/episode\/([^/]+)/)[1],
+        link,
+        uploaded_on: $(element).find(".zeebr").text().trim(),
+      });
+    });
     object.episode_list =
       episode_list.length === 0
         ? [
@@ -124,25 +128,16 @@ export async function detailAnime(req, res) {
             },
           ]
         : episode_list;
-    const batch_link = {
-      id:
-        $("div.venser > div:nth-child(6) > ul").text().length !== 0
-          ? $("div.venser > div:nth-child(6) > ul > li > span:nth-child(1) > a")
-              .attr("href").match(/\/batch\/(.*?)\//)[1]
-          : "Masih kosong gan",
-      link:
-        $("div.venser > div:nth-child(6) > ul").text().length !== 0
-          ? $(
-              "div.venser > div:nth-child(6) > ul > li > span:nth-child(1) > a"
-            ).attr("href")
-          : "Masih kosong gan",
-    };
-    const empty_link = {
-      id: "Masih kosong gan",
-      link: "Masih kosong gan",
-    };
-    object.batch_link = batch_link;
-    //console.log(epsElement);
+    const batchHref = $("div.venser > div:nth-child(6) > ul > li > span:nth-child(1) > a").attr("href");
+    object.batch_link = batchHref
+      ? {
+          id: batchHref.match(/\/batch\/([^/]+)/)?.[1],
+          link: batchHref,
+        }
+      : {
+          id: "Masih kosong gan",
+          link: "Masih kosong gan",
+        };
     res.json(object);
   } catch (err) {
     console.log(err);
@@ -152,32 +147,76 @@ export async function detailAnime(req, res) {
 export async function batchAnime(req, res) {
   const id = req.params.id;
   const fullUrl = `${baseUrl}batch/${id}`;
-  console.log(fullUrl);
-  Axios.get(fullUrl)
-    .then((response) => {
-      const $ = load(response.data);
-      const obj = {};
-      obj.title = $(".batchlink > h4").text();
-      obj.status = "success";
-      obj.baseUrl = fullUrl;
-      let low_quality = _batchQualityFunction(0, response.data);
-      let medium_quality = _batchQualityFunction(1, response.data);
-      let high_quality = _batchQualityFunction(2, response.data);
-      obj.download_list = { low_quality, medium_quality, high_quality };
-      res.send(obj);
-    })
-    .catch((err) => {
-      requestFailed(req, res, err);
+  try {
+    const response = await Axios.get(fullUrl, { headers });
+    const $ = load(response.data);
+    const obj = {};
+    obj.status = "success";
+    obj.baseUrl = fullUrl;
+    obj.batch_id = id;
+    obj.batch_list = [];
+
+    if ($(".download2 > .batchlink").length === 0) {
+      res.status(404).json({ status: false, message: `batch "${id}" not found` });
+      return;
+    }
+
+    $(".download2 > .batchlink").each((i, element) => {
+      const title = $(element).children("h4").first().text().trim();
+      const qualities = [];
+      $(element)
+        .children("ul")
+        .each((j, ul) => {
+          $(ul)
+            .children("li")
+            .each((k, li) => {
+              const download_links = [];
+              $(li)
+                .find("a")
+                .each((l, a) => {
+                  download_links.push({
+                    host: $(a).text().trim(),
+                    link: $(a).attr("href"),
+                  });
+                });
+              qualities.push({
+                quality: $(li).find("strong").text().trim(),
+                size: $(li).find("i").text().trim(),
+                download_links,
+              });
+            });
+        });
+      obj.batch_list.push({ title, download_list: qualities });
     });
+
+    obj.title = obj.batch_list.length ? obj.batch_list[0].title : "Masih kosong gan";
+    const allQualities = obj.batch_list.flatMap((b) => b.download_list);
+    obj.download_list =
+      allQualities.length > 0
+        ? {
+            low_quality: allQualities[0],
+            medium_quality: allQualities[Math.floor((allQualities.length - 1) / 2)],
+            high_quality: allQualities[allQualities.length - 1],
+          }
+        : { low_quality: null, medium_quality: null, high_quality: null };
+
+    res.send(obj);
+  } catch (err) {
+    requestFailed(req, res, err);
+  }
 }
 export async function epsAnime(req, res) {
   const id = req.params.id;
-  const fullUrl = `${_baseUrl}/episode/${id}`;
+  const fullUrl = `${_baseUrl}episode/${id}`;
   try {
     const response = await Axios.get(fullUrl, {
       headers
     });
     const $ = load(response.data);
+    if ($(".venutama").length === 0) {
+      res.status(404).json({ status: false, message: `episode "${id}" not found` });
+      return;
+    }
     const streamElement = $("#lightsVideo").find("#embed_holder");
     const obj = {};
     obj.title = $(".venutama > h1").text();
@@ -190,31 +229,41 @@ export async function epsAnime(req, res) {
 
     // obj.link_stream = await get(streamLink);
 
+    obj.episode_list = [];
     $("div.keyingpost > li").each((i, element) => {
-      const dataEpsList = {
-        title: $(element).find("a").text(),
-        id: $(element).find("a").attr("href").match(/\/episode\/([^\/]+)/)[1]
-      }
+      const link = $(element).find("a").attr("href");
+      if (!link || !/\/episode\//.test(link)) return;
+      obj.episode_list.push({
+        title: $(element).find("a").text().trim(),
+        id: link.match(/\/episode\/([^/]+)/)[1],
+        link,
+      });
+    });
 
-      obj.episode_list = obj.episode_list ? [...obj.episode_list, dataEpsList] : [dataEpsList]
-    })
+    obj.mirror_list = [];
+    $(".mirrorstream ul").each((i, element) => {
+      const quality = ($(element).attr("class") || "").replace(/^m/, "");
+      $(element)
+        .find("li > a")
+        .each((j, a) => {
+          const dataContent = $(a).attr("data-content");
+          if (!dataContent) return;
+          obj.mirror_list.push({
+            quality,
+            host: $(a).text().trim(),
+            data_content: dataContent,
+          });
+        });
+    });
 
-    let low_quality;
-    let medium_quality;
-    let high_quality;
-
-    if($('#venkonten > div.venser > div.venutama > div.download > ul > li:nth-child(1)').text() === ''){
-      console.log('ul is empty');
-      low_quality = _notFoundQualityHandler(response.data,0)
-      medium_quality = _notFoundQualityHandler(response.data,1)
-      high_quality = _notFoundQualityHandler(response.data,2)
-    }else{
-      console.log('ul is not empty');
-      low_quality = _epsQualityFunction(0, response.data);
-      medium_quality = _epsQualityFunction(1, response.data);
-      high_quality = _epsQualityFunction(2, response.data);
-    }
-    obj.download = { low_quality, medium_quality, high_quality };
+    const allQualities = _parseDownloadList(response.data);
+    obj.download_list = allQualities;
+    obj.download = {
+      low_quality: allQualities[0] || null,
+      medium_quality:
+        allQualities[Math.floor((allQualities.length - 1) / 2)] || null,
+      high_quality: allQualities[allQualities.length - 1] || null,
+    };
     res.send(obj);
   } catch (err) {
     console.log(err);
@@ -223,106 +272,95 @@ export async function epsAnime(req, res) {
 }
 
 export async function epsMirror(req, res) {
-  const mirrorId = req.body.mirrorId;
-  const animeId = req.params.animeId;
-  const fullUrl = `${baseUrl}${animeId}/${mirrorId}`;
+  const dataContent = req.body?.data_content ?? req.body?.dataContent;
+  const episodeId = req.params.animeId;
+  const ajaxUrl = `${baseUrl}wp-admin/admin-ajax.php`;
+
+  if (!dataContent) {
+    res.status(400).json({
+      status: false,
+      message: "data_content is required (base64 payload from mirror_list)",
+    });
+    return;
+  }
+
+  let payload;
   try {
-    const response = await Axios.get(fullUrl);
-    const $ = load(response.data);
-    const obj = {};
-    obj.title = $(".venutama > h1").text();
-    obj.baseUrl = fullUrl;
-    obj.id = fullUrl.replace(_baseUrl, "");
-    const streamLink = $('#pembed > div > iframe').attr('src')
-    obj.streamLink = streamLink
-    obj.link_stream = await get(streamLink);
-    res.send(obj);
-  } catch (error) {
-    console.log(error);
+    payload = JSON.parse(Buffer.from(dataContent, "base64").toString());
+  } catch (err) {
+    res.status(400).json({ status: false, message: "data_content is not valid base64 JSON" });
+    return;
+  }
+
+  const ajaxHeaders = {
+    ...headers,
+    Accept: "*/*",
+    "X-Requested-With": "XMLHttpRequest",
+    Origin: baseUrl.replace(/\/$/, ""),
+    Referer: `${baseUrl}episode/${episodeId}/`,
+    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+  };
+
+  try {
+    const nonceResponse = await Axios.post(
+      ajaxUrl,
+      new URLSearchParams({ action: "aa1208d27f29ca340c92c66d1926f13f" }).toString(),
+      { headers: ajaxHeaders }
+    );
+    const nonceBody = nonceResponse.data;
+    const nonce =
+      typeof nonceBody === "string" ? nonceBody : nonceBody?.data ?? "";
+
+    const embedResponse = await Axios.post(
+      ajaxUrl,
+      new URLSearchParams({
+        ...payload,
+        nonce,
+        action: "2a3505c93b0035d3f455df82bf976b84",
+      }).toString(),
+      { headers: ajaxHeaders }
+    );
+    const embedBody = embedResponse.data;
+    const encoded =
+      typeof embedBody === "string" ? embedBody : embedBody?.data ?? "";
+
+    const embedHtml = Buffer.from(encoded, "base64").toString();
+    const $ = load(embedHtml);
+    const streamLink = $("iframe").attr("src");
+
+    res.send({
+      status: "success",
+      anime_id: episodeId,
+      stream_link: streamLink,
+      link_stream: streamLink ? await get(streamLink) : "-",
+    });
+  } catch (err) {
     requestFailed(req, res, err);
   }
 }
 
-function _batchQualityFunction(num, res) {
-  const $ = load(res);
-  const element = $(".download").find(".batchlink");
-  const download_links = [];
-  let response;
-  element.find("ul").filter(function () {
-    const quality = $(this).find("li").eq(num).find("strong").text();
-    const size = $(this).find("li").eq(num).find("i").text();
-    $(this)
-      .find("li")
-      .eq(num)
-      .find("a")
-      .each(function () {
-        const _list = {
-          host: $(this).text(),
-          link: $(this).attr("href"),
-        };
-        download_links.push(_list);
-        response = { quality, size, download_links };
+function _parseDownloadList(html) {
+  const $ = load(html);
+  const qualities = [];
+  $(".download ul").each((i, ul) => {
+    $(ul)
+      .children("li")
+      .each((j, li) => {
+        const download_links = [];
+        $(li)
+          .find("a")
+          .each((k, a) => {
+            download_links.push({
+              host: $(a).text().trim(),
+              link: $(a).attr("href"),
+            });
+          });
+        qualities.push({
+          quality: $(li).find("strong").text().trim(),
+          size: $(li).find("i").text().trim(),
+          download_links,
+        });
       });
   });
-  return response;
-}
-function _epsQualityFunction(num, res) {
-  const $ = load(res);
-  const element = $(".download");
-  const download_links = [];
-  let response;
-
-  element.find("ul").filter(function () {
-    const quality = $(this).find("li").eq(num).find("strong").text();
-    const size = $(this).find("li").eq(num).find("i").text();
-    $(this).find("li").eq(num).find("a").each(function () {
-        const _list = {
-          host: $(this).text(),
-          link: $(this).attr("href"),
-        };
-        download_links.push(_list);
-        response = { quality, size, download_links };
-        
-      });
-  });
-  return response;
-}
-
-function _notFoundQualityHandler(res,num){
-  const $ = load(res);
-  const download_links = [];
-  const element = $('.download')
-  let response;
-
-  element.filter(function(){
-    if($(this).find('.anime-box > .anime-title').eq(0).text() === ''){
-      $(this).find('.yondarkness-box').filter(function(){
-        const quality = $(this).find('.yondarkness-title').eq(num).text().split('[')[1].split(']')[0];
-        const size = $(this).find('.yondarkness-title').eq(num).text().split(']')[1].split('[')[1];
-        $(this).find('.yondarkness-item').eq(num).find('a').each((idx,el) => {
-          const _list = {
-            host: $(el).text(),
-            link: $(el).attr("href"),
-          };
-          download_links.push(_list);
-          response = { quality, size, download_links };
-        })
-      })
-    }else{
-      $(this).find('.anime-box').filter(function(){
-        const quality = $(this).find('.anime-title').eq(num).text().split('[')[1].split(']')[0];
-        const size = $(this).find('.anime-title').eq(num).text().split(']')[1].split('[')[1];
-        $(this).find('.anime-item').eq(num).find('a').each((idx,el) => {
-          const _list = {
-            host: $(el).text(),
-            link: $(el).attr("href"),
-          };
-          download_links.push(_list);
-          response = { quality, size, download_links };
-        })
-      })
-    }
-  })
-  return response;
-
+  return qualities;
 }
